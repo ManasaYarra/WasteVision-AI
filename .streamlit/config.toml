@@ -1,3 +1,5 @@
+[browser]
+gatherUsageStats = false
+
 [server]
-fileWatcherType = "none"
-headless = false
+headless = true
