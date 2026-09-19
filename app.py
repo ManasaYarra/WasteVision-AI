@@ -103,11 +103,50 @@ PAGE_SLUGS = {
 SLUG_TO_PAGE = {v: k for k, v in PAGE_SLUGS.items()}
 
 
-def go_to(page_name):
-    """Navigate to a page and update the browser URL so Back/Forward work."""
+if "nav_history" not in st.session_state:
+    st.session_state.nav_history = []
+if "nav_forward" not in st.session_state:
+    st.session_state.nav_forward = []
+
+
+def go_to(page_name, _from_nav=False):
+    """Navigate to a page, update the browser URL, and record history for the in-app Back button.
+
+    _from_nav=True is used internally by go_back()/go_next() so that using
+    those buttons doesn't wipe out the other stack. Any other call (normal
+    navigation, like clicking a new nav item or an in-app link) clears the
+    forward stack, just like clicking a fresh link in a browser kills the
+    Forward button.
+    """
+    if st.session_state.get("selected_tab") and st.session_state.selected_tab != page_name:
+        st.session_state.nav_history.append(st.session_state.selected_tab)
+        if not _from_nav:
+            st.session_state.nav_forward = []
     st.session_state.selected_tab = page_name
     st.query_params["page"] = PAGE_SLUGS.get(page_name, "home")
     st.rerun()
+
+
+def go_back():
+    """Return to the previous page using the in-app history stack (reliable, unlike the browser Back button in Streamlit)."""
+    if st.session_state.nav_history:
+        current_page = st.session_state.selected_tab
+        previous_page = st.session_state.nav_history.pop()
+        st.session_state.nav_forward.append(current_page)
+        st.session_state.selected_tab = previous_page
+        st.query_params["page"] = PAGE_SLUGS.get(previous_page, "home")
+        st.rerun()
+
+
+def go_next():
+    """Move forward again to the page that was left via go_back(), mirroring a browser's Forward button."""
+    if st.session_state.nav_forward:
+        current_page = st.session_state.selected_tab
+        next_page = st.session_state.nav_forward.pop()
+        st.session_state.nav_history.append(current_page)
+        st.session_state.selected_tab = next_page
+        st.query_params["page"] = PAGE_SLUGS.get(next_page, "home")
+        st.rerun()
 
 
 # On every run, check the URL's ?page= value. This is what makes the
@@ -129,11 +168,20 @@ else:
 if "show_advanced_settings" not in st.session_state:
     st.session_state.show_advanced_settings = False
 
-# Render a right-aligned settings icon using columns
-col1, col2 = st.columns([10, 1])
-with col2:
+# Render a Back button, a Next button, and settings icon using columns
+col1, col1b, col2, col3 = st.columns([1, 1, 8, 1])
+with col1:
+    if st.session_state.nav_history:
+        if st.button("⬅️ Back", key="in_app_back_button"):
+            go_back()
+with col1b:
+    if st.session_state.nav_forward:
+        if st.button("➡️ Next", key="in_app_next_button"):
+            go_next()
+with col3:
     if st.button("⚙️", key="settings_modal"):
         st.session_state.show_advanced_settings = not st.session_state.show_advanced_settings
+
 
 if st.session_state.show_advanced_settings:
     with st.expander("Advanced Settings", expanded=True):
@@ -248,35 +296,37 @@ elif st.session_state.selected_tab == "🔍 Analyze Waste":
                 st.error(f"Error capturing image from camera: {e}")
 
     if input_image is not None:
+        # Only auto-analyze if this is a new image (avoid re-analyzing on every rerun)
+        is_new_image = (
+            st.session_state.current_image is None
+            or getattr(st.session_state.current_image, "tobytes", lambda: None)() != input_image.tobytes()
+        )
         st.session_state.current_image = input_image
+
         st.markdown("### Image Preview")
+        st.image(input_image, caption="Captured / Uploaded Waste Photo", use_container_width=True)
 
-        prev_col, btn_col = st.columns([1, 1])
-        with prev_col:
-            st.image(input_image, caption="Captured / Uploaded Waste Photo", use_container_width=True)
-            if st.button("🔄 Retake / Change Photo"):
-                st.session_state.current_image = None
-                st.session_state.analysis_result = None
-                st.rerun()
+        if is_new_image:
+            with st.spinner("🧠 AI is identifying object characteristics and waste category..."):
+                result = analyze_waste(input_image)
+                st.session_state.analysis_result = result
 
-        with btn_col:
-            st.success("Image loaded! Click below to identify the waste item automatically.")
-            if st.button("🚀 Analyze Waste Item", type="primary", use_container_width=True):
-                with st.spinner("🧠 AI is identifying object characteristics and waste category..."):
-                    result = analyze_waste(input_image)
-                    st.session_state.analysis_result = result
+                if result.get("is_waste"):
+                    db.save_classification(
+                        item_name=result.get("detected_item"),
+                        category=result.get("category"),
+                        confidence=result.get("confidence"),
+                        explanation=result.get("explanation"),
+                        disposal_instructions=result.get("disposal_instructions"),
+                        co2_saved_kg=result.get("co2_saved_kg", 0.45)
+                    )
 
-                    if result.get("is_waste"):
-                        db.save_classification(
-                            item_name=result.get("detected_item"),
-                            category=result.get("category"),
-                            confidence=result.get("confidence"),
-                            explanation=result.get("explanation"),
-                            disposal_instructions=result.get("disposal_instructions"),
-                            co2_saved_kg=result.get("co2_saved_kg", 0.45)
-                        )
+                go_to("📊 AI Result")
 
-                    go_to("📊 AI Result")
+        if st.button("🔄 Retake / Change Photo"):
+            st.session_state.current_image = None
+            st.session_state.analysis_result = None
+            st.rerun()
 
 # -----------------------------------------------------------------------------
 # PAGE 3: AI RESULT
