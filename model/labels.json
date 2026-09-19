@@ -1,0 +1,75 @@
+{
+  "Recyclable": {
+    "badge_color": "#10B981",
+    "badge_bg": "#D1FAE5",
+    "icon": "♻️",
+    "description": "Materials that can be reprocessed into new products such as paper, plastic bottles, glass, and metals.",
+    "items": ["Plastic Bottle", "Cardboard Box", "Aluminum Can", "Glass Bottle", "Paper Magazine", "Plastic Container"],
+    "disposal_instructions": [
+      "Rinse and dry the container to remove food/beverage residue.",
+      "Separate caps, lids, and labels if required by local recycling rules.",
+      "Flatten cardboard boxes and crush plastic bottles to save space.",
+      "Place into the dedicated Blue Recycling Bin."
+    ],
+    "avoid": ["Do not include soiled paper, food-contaminated boxes (e.g. greasy pizza boxes), or broken glass."],
+    "co2_impact_kg": 0.45
+  },
+  "Organic": {
+    "badge_color": "#84CC16",
+    "badge_bg": "#ECFCCB",
+    "icon": "🍎",
+    "description": "Biodegradable matter such as food scraps, garden waste, fruit peels, and coffee grounds.",
+    "items": ["Fruit Peel", "Food Scraps", "Vegetable Waste", "Coffee Grounds", "Eggshells", "Garden Leaves"],
+    "disposal_instructions": [
+      "Collect in a breathable or compostable bag.",
+      "Keep free from plastic stickers, twist ties, or synthetic wrappers.",
+      "Deposit in a compost bin or Green Organics Bin for municipal composting."
+    ],
+    "avoid": ["Do not mix with plastic wrappers, treated wood, or meat waste if prohibited by home composting."],
+    "co2_impact_kg": 0.65
+  },
+  "E-waste": {
+    "badge_color": "#0284C7",
+    "badge_bg": "#E0F2FE",
+    "icon": "🔌",
+    "description": "Discarded electronic devices, circuit boards, cables, chargers, appliances, and accessories.",
+    "items": ["Mobile Charger", "Old Cellphone", "Computer Cable", "Circuit Board", "Headphones", "Power Adapter"],
+    "disposal_instructions": [
+      "Wipe personal data off devices before recycling.",
+      "Separate removable batteries if applicable.",
+      "Take to a designated E-Waste Drop-off facility or tech retailer recycling kiosk.",
+      "Never dispose in standard household trash bins."
+    ],
+    "avoid": ["Do not throw in household garbage or incinerators."],
+    "co2_impact_kg": 1.85
+  },
+  "Hazardous": {
+    "badge_color": "#E11D48",
+    "badge_bg": "#FFE4E6",
+    "icon": "☣️",
+    "description": "Toxic, flammable, corrosive, or reactive materials that pose environmental and safety risks.",
+    "items": ["AA/Li-ion Battery", "Chemical Container", "Paint Can", "Fluorescent Lightbulb", "Motor Oil Can", "Pesticide Bottle"],
+    "disposal_instructions": [
+      "Store upright in a sealed, leak-proof container.",
+      "Tape battery terminals with electrical tape to prevent short circuits.",
+      "Drop off at a certified Household Hazardous Waste (HHW) collection point.",
+      "Handle with care using protective gloves."
+    ],
+    "avoid": ["Never pour down drains, flush down toilets, or place in standard trash bins."],
+    "co2_impact_kg": 2.20
+  },
+  "General Waste": {
+    "badge_color": "#64748B",
+    "badge_bg": "#F1F5F9",
+    "icon": "🗑️",
+    "description": "Non-recyclable, non-hazardous, and non-compostable everyday refuse.",
+    "items": ["Snack Wrapper", "Styrofoam Cup", "Soiled Napkin", "Multi-layer Packaging", "Used Tissue"],
+    "disposal_instructions": [
+      "Bag securely to prevent litter and odor.",
+      "Dispose in the standard Black/Grey General Trash Bin.",
+      "Aim to minimize consumption of non-recyclable single-use items."
+    ],
+    "avoid": ["Do not place hazardous waste, electronics, or clean recyclables here."],
+    "co2_impact_kg": 0.10
+  }
+}
