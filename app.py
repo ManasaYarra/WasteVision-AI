@@ -59,7 +59,7 @@ st.set_page_config(
 
 # Session State Initialization
 if "theme" not in st.session_state:
-    st.session_state.theme = "light"
+    st.session_state.theme = "dark"
 if "selected_tab" not in st.session_state:
     st.session_state.selected_tab = "🏠 Home"
 if "analysis_result" not in st.session_state:
@@ -70,25 +70,8 @@ if "target_disposal_category" not in st.session_state:
     st.session_state.target_disposal_category = None
 
 # Sidebar Navigation Header
-st.sidebar.image("https://img.icons8.com/isometric-folders/100/recycle.png", width=70)
 st.sidebar.title("♻️ WasteVision AI")
 st.sidebar.caption("Smart Identification & Disposal")
-
-# Theme Mode Toggle Switch
-st.sidebar.markdown("##### 🎨 Display Theme")
-theme_choice = st.sidebar.radio(
-    "Theme Mode",
-    ["☀️ Light", "🌙 Dark"],
-    index=0 if st.session_state.theme == "light" else 1,
-    horizontal=True,
-    key="theme_radio_switch",
-    label_visibility="collapsed"
-)
-
-selected_theme_mode = "dark" if "Dark" in theme_choice else "light"
-if selected_theme_mode != st.session_state.theme:
-    st.session_state.theme = selected_theme_mode
-    st.rerun()
 
 # Inject Theme-specific CSS styling
 inject_custom_css(theme=st.session_state.theme)
@@ -96,17 +79,51 @@ inject_custom_css(theme=st.session_state.theme)
 # Primary Navigation Options
 nav_options = [
     "🏠 Home",
+    "📢 Report Public Waste",
     "🔍 Analyze Waste",
     "📊 AI Result",
     "📖 Disposal Guide",
-    "📢 Report Public Waste",
     "🏛️ Municipal Dashboard",
     "📍 Nearby Facilities",
     "🌱 My Impact"
 ]
 
+# Map each page to a short URL-safe slug so the browser's Back/Forward
+# buttons work correctly (each page becomes its own browser history entry).
+PAGE_SLUGS = {
+    "🏠 Home": "home",
+    "🔍 Analyze Waste": "analyze",
+    "📊 AI Result": "result",
+    "📖 Disposal Guide": "guide",
+    "📢 Report Public Waste": "report",
+    "🏛️ Municipal Dashboard": "dashboard",
+    "📍 Nearby Facilities": "facilities",
+    "🌱 My Impact": "impact",
+}
+SLUG_TO_PAGE = {v: k for k, v in PAGE_SLUGS.items()}
+
+
+def go_to(page_name):
+    """Navigate to a page and update the browser URL so Back/Forward work."""
+    st.session_state.selected_tab = page_name
+    st.query_params["page"] = PAGE_SLUGS.get(page_name, "home")
+    st.rerun()
+
+
+# On every run, check the URL's ?page= value. This is what makes the
+# browser Back button work: when the user clicks Back, the URL changes
+# to the previous page's slug, and Streamlit reruns picking that up here.
+query_page = st.query_params.get("page")
+if query_page and query_page in SLUG_TO_PAGE:
+    st.session_state.selected_tab = SLUG_TO_PAGE[query_page]
+else:
+    st.query_params["page"] = PAGE_SLUGS.get(st.session_state.selected_tab, "home")
+
 selected_tab = st.sidebar.radio("Navigation", nav_options, index=nav_options.index(st.session_state.selected_tab))
-st.session_state.selected_tab = selected_tab
+if selected_tab != st.session_state.selected_tab:
+    go_to(selected_tab)
+else:
+    st.session_state.selected_tab = selected_tab
 
 # Settings access in top-right corner of main page
 if "show_advanced_settings" not in st.session_state:
@@ -136,25 +153,6 @@ if st.session_state.show_advanced_settings:
 # -----------------------------------------------------------------------------
 if st.session_state.selected_tab == "🏠 Home":
     render_hero_banner()
-
-    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
-    with col1:
-        if st.button("📤 Upload Waste Image", use_container_width=True, type="primary"):
-            st.session_state.selected_tab = "🔍 Analyze Waste"
-            st.rerun()
-    with col2:
-        if st.button("📢 Report Public Dump", use_container_width=True):
-            st.session_state.selected_tab = "📢 Report Public Waste"
-            st.rerun()
-    with col3:
-        if st.button("📖 View Disposal Guide", use_container_width=True):
-            st.session_state.target_disposal_category = None
-            st.session_state.selected_tab = "📖 Disposal Guide"
-            st.rerun()
-    with col4:
-        if st.button("📍 Find Drop-Off Points", use_container_width=True):
-            st.session_state.selected_tab = "📍 Nearby Facilities"
-            st.rerun()
 
     st.markdown("---")
 
@@ -278,8 +276,7 @@ elif st.session_state.selected_tab == "🔍 Analyze Waste":
                             co2_saved_kg=result.get("co2_saved_kg", 0.45)
                         )
 
-                    st.session_state.selected_tab = "📊 AI Result"
-                    st.rerun()
+                    go_to("📊 AI Result")
 
 # -----------------------------------------------------------------------------
 # PAGE 3: AI RESULT
@@ -292,8 +289,7 @@ elif st.session_state.selected_tab == "📊 AI Result":
     if result is None:
         st.warning("⚠️ No recent analysis found. Please upload or capture an image on the Analyze Waste page first.")
         if st.button("👈 Go to Analyze Waste"):
-            st.session_state.selected_tab = "🔍 Analyze Waste"
-            st.rerun()
+            go_to("🔍 Analyze Waste")
     else:
         if not result.get("is_waste", True) or result.get("category") == "Unrecognized":
             st.error("❓ Unable to confidently identify this waste item. Please upload a clearer image.")
@@ -305,8 +301,7 @@ elif st.session_state.selected_tab == "📊 AI Result":
             * Avoid severe blur, extreme dark shadows, or cluttered backgrounds.
             """)
             if st.button("🔄 Try Another Image"):
-                st.session_state.selected_tab = "🔍 Analyze Waste"
-                st.rerun()
+                go_to("🔍 Analyze Waste")
         else:
             res_col1, res_col2 = st.columns([1, 1])
 
@@ -354,18 +349,15 @@ elif st.session_state.selected_tab == "📊 AI Result":
                 if st.button("🔄 Analyze Another Item", use_container_width=True, type="primary"):
                     st.session_state.analysis_result = None
                     st.session_state.current_image = None
-                    st.session_state.selected_tab = "🔍 Analyze Waste"
-                    st.rerun()
+                    go_to("🔍 Analyze Waste")
             with act_col2:
                 # Bug Fix 1: Pass detected category to Disposal Guide page
                 if st.button("📖 View Full Disposal Guide", use_container_width=True):
                     st.session_state.target_disposal_category = category
-                    st.session_state.selected_tab = "📖 Disposal Guide"
-                    st.rerun()
+                    go_to("📖 Disposal Guide")
             with act_col3:
                 if st.button("📍 Find Nearby Facilities", use_container_width=True):
-                    st.session_state.selected_tab = "📍 Nearby Facilities"
-                    st.rerun()
+                    go_to("📍 Nearby Facilities")
 
 # -----------------------------------------------------------------------------
 # PAGE 4: DISPOSAL GUIDE (FIX 1: Linked to detected category)
